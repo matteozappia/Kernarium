@@ -1,6 +1,10 @@
 Kernarium
 ===
 
+> This repository is a fork of [imxieyi/Kernarium](https://github.com/imxieyi/Kernarium).
+> It follows upstream and adds features of its own to Andarium, starting with
+> flashing add-on packages (ZIP) through recovery.
+
 Run a real Linux kernel natively on iOS, through the magic of [User-mode Linux](https://en.wikipedia.org/wiki/User-mode_Linux).
 
 ## Apps
