@@ -36,6 +36,23 @@ on fs
 on late-fs
     mount_all --late
     write /dev/kmsg "GUEST_BUILD_FINGERPRINT: ${ro.build.fingerprint}"
+    # Add-on layers: what a package flashed in recovery installed for the
+    # system, system_ext and product partitions (tools/kernarium_addons.sh).
+    # Each is an ext4 image on userdata whose layer/ directory exists only
+    # when it holds a payload; it is mounted read-only under the real
+    # partition before apexd and the zygote read either. A guest with no
+    # add-ons has no image or no layer/, the mount fails and the partition
+    # stays as the release made it.
+    mkdir /mnt/vendor/kernarium_addons 0755 root root
+    mkdir /mnt/vendor/kernarium_addons/system 0755 root root
+    mkdir /mnt/vendor/kernarium_addons/system_ext 0755 root root
+    mkdir /mnt/vendor/kernarium_addons/product 0755 root root
+    mount ext4 loop@/data/vendor/kernarium_addons/system.img /mnt/vendor/kernarium_addons/system ro noatime
+    mount ext4 loop@/data/vendor/kernarium_addons/system_ext.img /mnt/vendor/kernarium_addons/system_ext ro noatime
+    mount ext4 loop@/data/vendor/kernarium_addons/product.img /mnt/vendor/kernarium_addons/product ro noatime
+    mount overlay overlay /system ro lowerdir=/mnt/vendor/kernarium_addons/system/layer:/system
+    mount overlay overlay /system_ext ro lowerdir=/mnt/vendor/kernarium_addons/system_ext/layer:/system_ext
+    mount overlay overlay /product ro lowerdir=/mnt/vendor/kernarium_addons/product/layer:/product
 
 # The host may have grown the userdata partition since the last boot. Once
 # /data is mounted, and before the zygote starts, the kernel's online resize

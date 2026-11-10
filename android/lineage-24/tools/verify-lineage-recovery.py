@@ -27,6 +27,7 @@ REQUIRED_PATHS = {
     "sepolicy",
     "system/bin/adbd",
     "system/bin/e2fsck",
+    "system/bin/kernarium_addons.sh",
     "system/bin/mke2fs",
     "system/bin/recovery",
     "system/bin/resize2fs",

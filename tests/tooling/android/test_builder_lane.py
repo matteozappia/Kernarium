@@ -6296,6 +6296,7 @@ def synthetic_lineage_ramdisk_for(
             newc_entry("sepolicy", 0o100644, policy if policy is not None else synthetic_selinux_policy(), 16)
         ]),
         newc_entry("system/bin/e2fsck", 0o100755, b"tool", 4),
+        newc_entry("system/bin/kernarium_addons.sh", 0o100644, b"script", 99),
         newc_entry("system/bin/mke2fs", 0o100755, b"tool", 5),
         newc_entry(
             "system/bin/recovery", 0o100755,

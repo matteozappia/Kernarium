@@ -3,3 +3,4 @@
 # export again; never edit this directory by hand.
 patch	recovery_ui-accept-a-single-touch-screen.patch
 patch	recovery_ui-scale-resources-for-host-display-density.patch
+patch	recovery-ask-before-installing-an-unverified-package-on-a-user-build.patch

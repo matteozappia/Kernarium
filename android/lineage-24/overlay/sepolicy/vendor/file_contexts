@@ -23,3 +23,6 @@
 # The Codec2 store that serves the host's hardware video encoders runs in the
 # mediacodec domain like the stock Codec2 service.
 /(vendor|system/vendor)/bin/hw/android\.hardware\.media\.c2-service-v4l2  u:object_r:mediacodec_exec:s0
+
+# The add-on layers recovery creates for flashed packages (kernarium_addons.te).
+/data/vendor/kernarium_addons(/.*)?  u:object_r:kernarium_addons_data_file:s0

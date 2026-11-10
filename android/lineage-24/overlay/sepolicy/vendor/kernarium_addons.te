@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Add-on layers (tools/kernarium_addons.sh): ext4 images on userdata that hold
+# what a package flashed in recovery installed for the system, system_ext and
+# product partitions.
+#
+# Recovery's domain may not write a data type, so recovery mounts userdata
+# with kernarium_addons_file as the one context of every file and creates the
+# images under it. The files it creates carry no label on disk: Android sees
+# them unlabeled until its first restorecon gives them the data type.
+type kernarium_addons_file, file_type;
+type kernarium_addons_data_file, file_type, data_file_type;
+
+allow kernarium_addons_file self:filesystem associate;

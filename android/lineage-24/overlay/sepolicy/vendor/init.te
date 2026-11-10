@@ -6,3 +6,17 @@
 # finds the file, so the check is refused although the write succeeds.
 # Cuttlefish tracks the same record as b/340399580.
 dontaudit init debugfs_bootreceiver_tracing:dir { write add_name };
+
+# Add-on layers (config/init.vendor.rc, kernarium_addons.te). At late-fs init
+# attaches each image to a loop device, mounts it read-only below /mnt/vendor
+# and mounts an overlay of its layer/ directory on the real partition. The
+# image is unlabeled on the first boot after recovery created it.
+allow init { kernarium_addons_data_file unlabeled }:dir search;
+allow init { kernarium_addons_data_file unlabeled }:file { getattr open read ioctl };
+allow init mnt_vendor_file:dir mounton;
+allow init system_file:dir mounton;
+# The kernel opens the files of an overlay with the credentials of the process
+# that mounted it, whoever reads or runs them through the mount.
+allow init system_file_type:dir r_dir_perms;
+allow init system_file_type:file { r_file_perms map execute };
+allow init system_file_type:lnk_file r_file_perms;

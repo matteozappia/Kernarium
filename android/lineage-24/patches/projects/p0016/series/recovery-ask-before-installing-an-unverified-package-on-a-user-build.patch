@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: matteo zappia <45754172+matteozappia@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 22:27:44 +0100
+Subject: [PATCH] recovery: ask before installing an unverified package on a
+ user build
+
+A user build refused every package whose signature the recovery does not
+trust, with no question. This product installs add-on packages (an
+application suite, for example) that their own makers sign, so no key the
+recovery carries verifies them. Ask the person at the screen on every build
+type, as a debuggable build already does; a package that is not confirmed is
+still refused, and one sideloaded with no text on the screen has nobody to
+ask and is refused as before.
+---
+ recovery.cpp | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/recovery.cpp b/recovery.cpp
+index 44c7261f021c11bb3c02cd4e282879ae52662c97..07d2f3083a98ce18897b01d13ad3e61a2b118779 100644
+--- a/recovery.cpp
++++ b/recovery.cpp
+@@ -179,12 +179,10 @@ bool ask_to_ab_reboot(Device* device) {
+ }
+ 
+ bool ask_to_continue_unverified(Device* device) {
+-  if (get_build_type() == "user") {
+-    return false;
+-  } else {
+-    device->GetUI()->SetProgressType(RecoveryUI::EMPTY);
+-    return yes_no(device, "Signature verification failed", "Install anyway?");
+-  }
++  // The person at the screen decides, on a user build too: an add-on package is signed by its
++  // own maker, whose key no recovery trusts.
++  device->GetUI()->SetProgressType(RecoveryUI::EMPTY);
++  return yes_no(device, "Signature verification failed", "Install anyway?");
+ }
+ 
+ bool ask_to_continue_downgrade(Device* device) {

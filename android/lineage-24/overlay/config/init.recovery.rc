@@ -5,3 +5,16 @@ import /init.recovery.cuttlefish.rc
 # before Recovery constructs its UI, as vendor init does in normal Android.
 on early-init && property:ro.boot.lcd_density=*
     setprop ro.sf.lcd_density ${ro.boot.lcd_density}
+
+# Add-on layers (tools/kernarium_addons.sh). Recovery sets sys.usb.config to
+# sideload before it waits for a package and to none after the installer has
+# run, so an installer finds writable system, system_ext and product
+# partitions and Android finds their payload afterwards. This machine has no
+# USB function to report the state recovery then waits for.
+on property:sys.usb.config=sideload
+    exec u:r:recovery:s0 root root -- /system/bin/sh /system/bin/kernarium_addons.sh prepare
+    setprop sys.usb.state sideload
+
+on property:sys.usb.config=none
+    exec u:r:recovery:s0 root root -- /system/bin/sh /system/bin/kernarium_addons.sh release
+    setprop sys.usb.state none

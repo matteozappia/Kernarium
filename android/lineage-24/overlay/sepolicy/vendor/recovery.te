@@ -11,3 +11,18 @@
 # the system's policy, like Cuttlefish's own recovery rules.
 allow recovery self:udp_socket { create ioctl };
 allowxperm recovery self:udp_socket ioctl { 0x8916 0x891c };
+
+# Add-on layers (tools/kernarium_addons.sh, kernarium_addons.te). The script
+# runs in recovery's domain around a sideload: it mounts userdata under one
+# context, creates the sparse images there, attaches them to loop devices and
+# points the system, system_ext and product links of /dev/block/by-name at
+# those devices for the installer, then puts the links back.
+allow recovery labeledfs:filesystem relabelfrom;
+allow recovery kernarium_addons_file:filesystem { relabelto mount unmount getattr };
+allow recovery kernarium_addons_file:dir create_dir_perms;
+allow recovery kernarium_addons_file:file create_file_perms;
+allow recovery loop_control_device:chr_file rw_file_perms;
+allow recovery loop_device:blk_file rw_file_perms;
+allow recovery block_device:dir { search write add_name remove_name };
+allow recovery block_device:lnk_file { create unlink read getattr };
+allow recovery kmsg_device:chr_file w_file_perms;

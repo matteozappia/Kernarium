@@ -206,6 +206,7 @@ PRODUCT_COPY_FILES := \
     $(PRODUCT_COPY_FILES)
 PRODUCT_COPY_FILES += \
     device/google/cuttlefish/shared/config/init.recovery.rc:$(TARGET_COPY_OUT_RECOVERY)/root/init.recovery.cuttlefish.rc \
+    device/kernarium/andarium/tools/kernarium_addons.sh:$(TARGET_COPY_OUT_RECOVERY)/root/system/bin/kernarium_addons.sh \
     device/kernarium/andarium/config/init.vendor.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/init.kernarium.rc \
     device/kernarium/andarium/config/ueventd.rc:$(TARGET_COPY_OUT_VENDOR)/etc/ueventd.rc \
     device/kernarium/andarium/config/fstab.uml:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.uml \

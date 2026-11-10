@@ -25,6 +25,8 @@ of the configured build variant (with the kernel-less `init_boot` and LineageOS
 recovery images); one static GPT guest disk containing both boot ramdisks; and a
 compact rootfs release installed by Apple consumers. Use the scripts under
 `build/` in that order; each script's `--help` is the canonical interface.
+`build/build-release.sh` runs the whole sequence on one builder, from source
+synchronization to the signed release.
 
 The kernel is an input, not an output: the `android-6.18` artifact the Mac
 builds with `kernel/mainline-6.18/build/build-kernel.sh --product android` and
@@ -439,6 +441,25 @@ the launch with exit status 3.
 
 `build/assemble-image.sh` owns ramdisk composition, system disk assembly and
 verification, and `tools/verify-lineage-recovery.py` checks the recovery image.
+
+### Add-on packages
+
+Recovery installs a flashable ZIP (an application suite, for example) that is
+sideloaded to it; its minadbd listens on vsock port 5555, which is how
+[Andarium](../../Andarium/README.md#android-operations) sends one. A package
+signed by a key recovery does not trust is installed only after the person
+confirms it on the recovery screen, on every build variant (route `p0016`).
+
+The read-only partitions stay as the release made them. An installer that
+mounts `system`, `system_ext` or `product` read-write gets that partition's
+add-on layer instead: a sparse ext4 image under `/data/vendor/kernarium_addons`
+that `overlay/tools/kernarium_addons.sh` offers through `/dev/block/by-name`
+while a sideload runs. At `late-fs` Android mounts each layer that holds a
+payload read-only over its partition (`overlay/config/init.vendor.rc`), so
+the layers follow the guest's data: they survive a system update and go with
+a factory reset or an erased guest. An installer that needs to read the
+existing system partition, or to change `vendor`, `odm` or a boot ramdisk, is
+not supported.
 
 ## Release installation
 
