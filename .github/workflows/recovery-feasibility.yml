@@ -1,0 +1,51 @@
+name: Recovery build feasibility
+on:
+  push:
+    branches: [experiment/recovery-runner]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect capacity and tools
+        run: |
+          df -h "$RUNNER_WORKSPACE"
+          free -h
+          command -v git-lfs
+          java -version
+      - name: Prepare Repo workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bin" "$RUNNER_WORKSPACE/android-src"
+          curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo -o "$RUNNER_TEMP/bin/repo"
+          chmod 0755 "$RUNNER_TEMP/bin/repo"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          cd "$RUNNER_WORKSPACE/android-src"
+          "$RUNNER_TEMP/bin/repo" init -u https://github.com/LineageOS/android.git -b b51a0c449a3279ca55fb6d4d91d2143e42e2fff5 --manifest-depth=1 --no-repo-verify
+      - name: Prepare pinned Android source
+        run: android/lineage-24/build/prepare-sources.sh --aosp-source "$RUNNER_WORKSPACE/android-src" --jobs 4
+      - name: Apply product patches
+        run: android/lineage-24/build/apply-aosp-patches.sh --aosp-source "$RUNNER_WORKSPACE/android-src"
+      - name: Build recovery only
+        shell: bash
+        run: |
+          set -eo pipefail
+          cd "$RUNNER_WORKSPACE/android-src"
+          source build/envsetup.sh
+          lunch lineage_andarium-cp2a-user
+          m -j2 recoveryimage
+      - name: Publish recovery image
+        uses: actions/upload-artifact@v4
+        with:
+          name: andarium-recovery-experimental
+          path: ${{ runner.workspace }}/android-src/out/target/product/andarium/recovery.img
+          if-no-files-found: error
+          retention-days: 1
+      - name: Report remaining disk
+        if: always()
+        run: df -h "$RUNNER_WORKSPACE"
