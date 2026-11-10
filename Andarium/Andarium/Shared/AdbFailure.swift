@@ -7,11 +7,13 @@ import Foundation
 nonisolated enum AdbActivity {
     case installApp
     case bugReport
+    case flashZip
 
     fileprivate var notReady: String {
         switch self {
         case .installApp: "install apps"
         case .bugReport: "make a bug report"
+        case .flashZip: "flash a package"
         }
     }
 
@@ -19,6 +21,7 @@ nonisolated enum AdbActivity {
         switch self {
         case .installApp: "the app was installed"
         case .bugReport: "the bug report was finished"
+        case .flashZip: "the package was sent"
         }
     }
 
@@ -26,6 +29,7 @@ nonisolated enum AdbActivity {
         switch self {
         case .installApp: "installing the app"
         case .bugReport: "making the bug report"
+        case .flashZip: "sending the package"
         }
     }
 
@@ -33,6 +37,7 @@ nonisolated enum AdbActivity {
         switch self {
         case .installApp: "install the app"
         case .bugReport: "make the bug report"
+        case .flashZip: "flash the package"
         }
     }
 }

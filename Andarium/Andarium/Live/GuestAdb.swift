@@ -40,10 +40,12 @@ nonisolated struct VsockConnector: AdbConnector, GuestStreamOpener {
 nonisolated enum AdbOperationRunner {
     static func run<Output: Sendable>(
         identity: AdbKeyStore.Identity?, clock: GuestRunClock, cancellable: Bool = true,
-        connector: any AdbConnector = VsockConnector(), onCancel: @escaping @Sendable () -> Void = {},
+        connector: any AdbConnector = VsockConnector(), connectLimit: Duration = AdbSession.defaultConnectLimit,
+        onCancel: @escaping @Sendable () -> Void = {},
         _ body: @escaping @Sendable (AdbSession) throws -> Output
     ) async throws -> Output {
-        let session = AdbSession(connector: connector, signer: identity?.signer, clock: clock)
+        let session = AdbSession(
+            connector: connector, signer: identity?.signer, clock: clock, connectLimit: connectLimit)
         let operation: () async throws -> Output = {
             try await withCheckedThrowingContinuation { continuation in
                 let thread = Thread {
@@ -265,6 +267,49 @@ nonisolated struct AdbGuestOperations: Sendable {
             }
         } catch {
             throw AdbOperationRunner.presented(error, activity: .installApp)
+        }
+    }
+
+    /// Flashes the ZIP at `url` (readable by the caller): restarts the guest
+    /// into recovery's sideload and serves the package to it. Returns once
+    /// recovery has read the whole package, which is when it asks the person
+    /// to confirm and installs; the package is served on until recovery ends
+    /// the sideload, and `finished` is called then, on every outcome.
+    func flashZip(
+        at url: URL, sizeBytes: Int, update: @escaping @Sendable (BusyUpdate) -> Void,
+        finished: @escaping @Sendable () -> Void
+    ) async throws {
+        guard let identity else {
+            finished()
+            throw AdbFailure(.keyRejected, activity: .flashZip)
+        }
+        do {
+            try await AdbOperationRunner.run(identity: identity, clock: clock, connector: connector) { session in
+                try ZipFlashOperation.restartIntoSideload(session: session)
+            }
+        } catch {
+            finished()
+            throw AdbOperationRunner.presented(error, activity: .flashZip)
+        }
+        update(BusyUpdate(detail: "Waiting for recovery\u{2026}"))
+        let (verified, verification) = AsyncThrowingStream<Never, Error>.makeStream()
+        let clock = clock
+        let connector = connector
+        let serving = Task.detached(priority: .userInitiated) {
+            defer { finished() }
+            do {
+                try await ZipFlashOperation.serve(
+                    url: url, size: sizeBytes, clock: clock, connector: connector, update: update
+                ) { verification.finish() }
+                verification.finish()
+            } catch {
+                verification.finish(throwing: AdbOperationRunner.presented(error, activity: .flashZip))
+            }
+        }
+        try await withTaskCancellationHandler {
+            for try await _ in verified {}
+        } onCancel: {
+            serving.cancel()
         }
     }
 }

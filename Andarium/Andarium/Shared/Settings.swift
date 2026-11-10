@@ -14,6 +14,7 @@ struct SessionSettingsSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var importing = false
+    @State private var picked = Import.apk
     @State private var copied = false
     @State private var detent: PresentationDetent
 
@@ -50,13 +51,21 @@ struct SessionSettingsSheet: View {
         .presentationDetents([.medium, .large], selection: $detent)
         .presentationBackground(Color(.systemGroupedBackground))
         .presentationBackgroundInteraction(.enabled(upThrough: .medium))
-        .fileImporter(isPresented: $importing, allowedContentTypes: [InstallRefusal.pickerType]) { result in
+        .fileImporter(
+            isPresented: $importing, allowedContentTypes: [picked == .zip ? .zip : InstallRefusal.pickerType]
+        ) { result in
             guard case .success(let url) = result else { return }
-            // Settings goes; the install, or the refusal of a file that is not
-            // one .apk, is on the full-screen overlay.
-            model.installPicked(url)
+            // Settings goes; the operation, or the refusal of a file of the
+            // wrong kind, is on the full-screen overlay.
+            if picked == .zip { model.flashPicked(url) } else { model.installPicked(url) }
             dismiss()
         }
+    }
+
+    /// What the file picker is opened for.
+    private enum Import {
+        case apk
+        case zip
     }
 
     /// Recovery runs no adb: its operations are for a normal session.
@@ -89,6 +98,7 @@ struct SessionSettingsSheet: View {
     private var apps: some View {
         Section("Apps") {
             Button {
+                picked = .apk
                 importing = true
             } label: {
                 HStack(spacing: 12) {
@@ -97,6 +107,21 @@ struct SessionSettingsSheet: View {
                         .foregroundStyle(Color.accentColor)
                     Spacer()
                     Text("From Files")
+                        .font(.subheadline)
+                        .foregroundStyle(Color(.secondaryLabel))
+                }
+            }
+            // Recovery installs the package: Android restarts into it.
+            Button {
+                picked = .zip
+                importing = true
+            } label: {
+                HStack(spacing: 12) {
+                    IconTile(symbol: "shippingbox.fill")
+                    Text("Flash ZIP\u{2026}")
+                        .foregroundStyle(Color.accentColor)
+                    Spacer()
+                    Text("In recovery")
                         .font(.subheadline)
                         .foregroundStyle(Color(.secondaryLabel))
                 }

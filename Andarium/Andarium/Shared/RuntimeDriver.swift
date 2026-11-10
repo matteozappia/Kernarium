@@ -116,6 +116,13 @@ protocol RuntimeDriver: AnyObject {
     /// Installs the APK at `url`, which the caller can read, into the guest.
     /// Cancelling the task stops it while the file is still being sent.
     func installApk(at url: URL, sizeBytes: Int, update: @escaping @Sendable (BusyUpdate) -> Void) async throws
+    /// Flashes the ZIP at `url`, which the caller can read: restarts the guest
+    /// into recovery and sends the package. Returns once recovery has the
+    /// whole package; `finished` is called when recovery no longer reads it.
+    func flashZip(
+        at url: URL, sizeBytes: Int, update: @escaping @Sendable (BusyUpdate) -> Void,
+        finished: @escaping @Sendable () -> Void
+    ) async throws
     /// Whether the guest's USB debugging setting is on; nil when it cannot be
     /// read now.
     func usbDebugging() async -> Bool?

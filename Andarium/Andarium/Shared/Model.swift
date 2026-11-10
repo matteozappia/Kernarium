@@ -202,6 +202,8 @@ final class AppModel {
     private var operation: Task<Void, Never>?
     private var operationEpoch = 0
     private var operationCancelled = false
+    /// A flash restarts the guest itself: that restart does not end it.
+    private var operationSurvivesRestart = false
     /// Looks after ADB over network while it is on.
     private var adbWatcher: Task<Void, Never>?
     private var readingUsbDebugging = false
@@ -668,6 +670,7 @@ final class AppModel {
             // The run ending, or a restart, took the operation over already.
             guard operationEpoch == epoch else { return }
             operation = nil
+            operationSurvivesRestart = false
             if let ending, let result {
                 let words = ending(result)
                 busy = ended(title: words.title, detail: words.detail, failed: false)
@@ -716,6 +719,7 @@ final class AppModel {
     private func abandonOperation() {
         // The words of a finished operation belong to the run that ended.
         if operation == nil, busy?.result != nil { busy = nil }
+        operationSurvivesRestart = false
         guard operation != nil else { return }
         operationEpoch += 1
         operation?.cancel()
@@ -820,6 +824,47 @@ final class AppModel {
         )
     }
 
+    /// Flash ZIP: `url` is what the Files picker returned. Android restarts
+    /// into recovery, which reads the package behind the overlay; the overlay
+    /// then says what recovery asks on its own screen, where the install
+    /// itself is confirmed and shown. The file's security scope is held until
+    /// recovery no longer reads the package.
+    func flashPicked(_ url: URL) {
+        guard busy == nil, case .running(.normal) = phase else { return }
+        let name = url.lastPathComponent
+        guard name.lowercased().hasSuffix(".zip") else {
+            busy = ended(title: Self.flashFailure, detail: "Choose a file that ends in .zip.", failed: true)
+            return
+        }
+        let scoped = url.startAccessingSecurityScopedResource()
+        let release: @Sendable () -> Void = { if scoped { url.stopAccessingSecurityScopedResource() } }
+        let bytes = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        operationSurvivesRestart = true
+        runOperation(
+            BusyState(
+                title: "Flashing package",
+                detail: "\(name) \u{00B7} \(Formats.size(bytes: UInt64(max(bytes, 0))))", progress: 0
+            ),
+            failure: Self.flashFailure,
+            ending: { _ in
+                (title: "Package sent",
+                 detail: "Recovery installs it now. Answer what it asks on its screen and, when it has finished, "
+                    + "choose Reboot system now.")
+            },
+            { [driver] update in
+                if let driver {
+                    try await driver.flashZip(at: url, sizeBytes: bytes, update: update, finished: release)
+                } else {
+                    release()
+                    try await Self.playInstall(update)
+                }
+            }
+        )
+    }
+
+    /// The title of a flash that did not happen.
+    static let flashFailure = "Package not flashed"
+
     /// The title of an install that did not happen.
     static let installFailure = "App not installed"
 
@@ -913,7 +958,8 @@ final class AppModel {
     /// Android's own Restart boots the guest again in place. ADB and the
     /// install list belong to the run that ended.
     func restart() {
-        abandonOperation()
+        // A flash asks for this restart itself and goes on in recovery.
+        if !operationSurvivesRestart { abandonOperation() }
         endAdbOverNetwork()
         spacePause = nil
         graphicsNotice = GraphicsNotice()

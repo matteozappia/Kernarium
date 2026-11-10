@@ -370,6 +370,13 @@ final class LiveRuntime: RuntimeDriver {
         try await operations.installApk(at: url, sizeBytes: sizeBytes, update: update)
     }
 
+    func flashZip(
+        at url: URL, sizeBytes: Int, update: @escaping @Sendable (BusyUpdate) -> Void,
+        finished: @escaping @Sendable () -> Void
+    ) async throws {
+        try await operations.flashZip(at: url, sizeBytes: sizeBytes, update: update, finished: finished)
+    }
+
     func usbDebugging() async -> Bool? {
         await operations.usbDebugging()
     }

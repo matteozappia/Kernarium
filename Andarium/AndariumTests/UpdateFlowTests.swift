@@ -103,6 +103,15 @@ final class StubDriver: RuntimeDriver {
         try await install(update)
     }
 
+    private(set) var flashed = 0
+    func flashZip(
+        at url: URL, sizeBytes: Int, update: @escaping @Sendable (BusyUpdate) -> Void,
+        finished: @escaping @Sendable () -> Void
+    ) async throws {
+        flashed += 1
+        finished()
+    }
+
     /// What the resume of a guest paused for space answers, and what Shut
     /// down does; a test sets them as the runtime would behave.
     var resumeAnswers = true

@@ -316,6 +316,12 @@ is on. `AndariumCore/Adb` speaks the protocol.
   MetricKit reports added under `andarium/`, the application's container paths
   taken out (`BugReportAttachments`); a zip that cannot be amended safely is
   shared as Android made it.
+- **Flash ZIP** is in every build, in a normal session. Android restarts into
+  recovery's sideload and Andarium serves the package to recovery's minadbd on
+  the same vsock port, block by block (`ZipFlashOperation`, `AdbSideload`).
+  Recovery asks on its own screen before it installs, and what a package may
+  change is in the
+  [Android README](../android/lineage-24/README.md#add-on-packages).
 - **ADB over network** is off at every run and never persisted, and is
   available only while the guest's USB debugging is on. `AdbNetworkBridge`
   listens on TCP 5555 and relays each computer to a fresh vsock stream, serving
