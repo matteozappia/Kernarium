@@ -158,7 +158,7 @@ fi
 	python3 -B "$ROOT_DIR/android/lineage-24/tools/render-pin-manifest.py" \
 		--base-manifest "$ROOT_DIR/android/lineage-24/metadata/base-manifest.xml" \
 		--output .repo/local_manifests/pin.xml
-	repo sync -c --detach -j "$JOBS"
+	repo sync -c --detach --depth=1 -j "$JOBS"
 	# Repo fetches the Git LFS objects, but a checkout writes their pointer
 	# files unless the project has the LFS filters. Install them per project
 	# instead of in the builder's global Git configuration, and replace the
